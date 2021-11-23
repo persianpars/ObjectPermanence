@@ -58,11 +58,11 @@ if __name__ == '__main__':
     analysis_parser.add_argument("--containment_with_movements_annotations", type=str, required=False, metavar='CATER/containment_with_move_annotations.txt',
                                  help='Path to a text file containing containment with movements frames for each video in the dataset')
     analysis_parser.add_argument("--visibility_ratio_gt_0", type=str, required=False, metavar='CATER/visibility_rate_gt_0.txt',
-                                 help='Path to a text file containing annotations for frames where visiblity rate of the snithc is greater than 0%')
+                                 help='Path to a text file containing annotations for frames where visiblity rate of the snithc is greater than 0%%')
     analysis_parser.add_argument("--visibility_ratio_gt_30", type=str, required=False, metavar='CATER/visibility_rate_gt_30.txt',
-                                 help='Path to a text file containing annotations for frames where visiblity rate of the snithc is greater than 30%')
+                                 help='Path to a text file containing annotations for frames where visiblity rate of the snithc is greater than 30%%')
     analysis_parser.add_argument("--visibility_ratio_gt_99", type=str, required=False, metavar='CATER/visibility_rate_gt_99.txt',
-                                 help='Path to a text file containing annotations for frames where visiblity rate of the snithc is greater than 99%')
+                                 help='Path to a text file containing annotations for frames where visiblity rate of the snithc is greater than 99%%')
     analysis_parser.add_argument("--iou_thresholds", type=str, required=True, default="0.5,0.9",
                                  help='iou threshold for MAP calculation')
     analysis_parser.add_argument("--output_file", type=str, required=True, metavar="results.csv",

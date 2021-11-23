@@ -5,3 +5,5 @@ __pycache__/
 output/
 .vscode/
 .idea/
+data/
+trained_models/
