@@ -5,9 +5,10 @@ import torch.nn as nn
 
 from baselines.detector import CaterObjectDetector
 from baselines.programmed_models import AbstractReasoner, ObjectDetectWithSiamTracker, HeuristicReasoner
-from baselines.learned_models import AbstractCaterModel, BaselineLstm, NonLinearLstm, TransformerLstm, OPNet, OPNetLstmMlp
+from baselines.learned_models import AbstractCaterModel, BaselineLstm, NonLinearLstm, TransformerLstm, OPNet, OPNetLstmMlp, DoubleTransformer
 from baselines.DaSiamRPN.code.net import SiamRPNvot
 from object_indices import OBJECTS_NAME_TO_IDX
+
 
 
 class ModelsFactory(object):
@@ -70,11 +71,14 @@ class ModelsFactory(object):
         elif model_name == "opnet_lstm_mlp_no_labels":
             model: AbstractCaterModel = OPNetLstmMlp(model_config)
 
+        elif model_name == "double_transformer":
+            model: AbstractCaterModel = DoubleTransformer(model_config)
+
         else:
             raise AttributeError("Model name is incorrect")
 
         if model_weights_path is not None:
-            model.load_state_dict(torch.load(model_weights_path, map_location="cuda:0"))
+            model.load_state_dict(torch.load(model_weights_path, map_location="cuda:0"), strict=True)
             print(f"Loaded model parameters from {model_weights_path}")
 
         return model

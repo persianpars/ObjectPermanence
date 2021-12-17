@@ -226,3 +226,42 @@ class TransformerLstm(AbstractCaterModel):
         # FFN to predict snitch bounding boxes
         y_boxes = self.predictions_layer(hidden)
         return y_boxes
+
+class DoubleTransformer(AbstractCaterModel):
+    def __init__(self, config: Dict[str, int]):
+        super().__init__(config)
+        boxes_features_dim = config["boxes_features_dim"]
+        num_attention_heads = config["num_attention_heads"]
+        num_attention_layers = config["num_attention_layers"]
+
+        # Positional encoding (removed because it hindered performance significantly)
+        # self.pe_objects = PositionalEncoding(boxes_features_dim, max_len=15, batch_first=True)
+        # self.pe_time = PositionalEncoding(boxes_features_dim, max_len=300, batch_first=True)
+
+        # Transformer encoder
+        encoder_layer = nn.TransformerEncoderLayer(d_model=boxes_features_dim, nhead=num_attention_heads, batch_first=True)
+        self.object_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_attention_layers)
+        time_encoder_layer = nn.TransformerEncoderLayer(d_model=boxes_features_dim, nhead=num_attention_heads, batch_first=True)
+        self.time_encoder = nn.TransformerEncoder(time_encoder_layer, num_layers=num_attention_layers)
+
+        # FFNs
+        self.boxes_linear = nn.Linear(in_features=self.bb_in_dim, out_features=boxes_features_dim, bias=False)
+        self.predictions_layer = nn.Linear(in_features=boxes_features_dim, out_features=self.bb_out_dim, bias=False)
+
+    def forward(self, x: torch.tensor, src_mask):
+        batch_size, frames_dim, objects_dim, features_dim = x.size()
+        # Extract embedded features via linear projection
+        boxes_features = F.relu(self.boxes_linear(x))
+
+        # Group dims into [batch_size, seq, embed_dim]. All modules below are batch first!
+        objects_sequence = boxes_features.view((batch_size * frames_dim, objects_dim, -1)).contiguous()
+        attended_objects = self.object_encoder(objects_sequence)
+        attended_snitch = attended_objects[:, 0, :]  # Keep only self-attention for the snitch
+
+        # Multi-attention time encoding. Masks the sequence so that it cannot look ahead in time.
+        time_sequence = attended_snitch.view((batch_size, frames_dim, -1)).contiguous()
+        attended_time = self.time_encoder(time_sequence, src_mask)
+
+        # FFN to predict snitch bounding boxes
+        y_boxes = self.predictions_layer(attended_time)
+        return y_boxes
