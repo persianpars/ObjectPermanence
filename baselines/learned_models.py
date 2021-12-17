@@ -3,6 +3,7 @@ from typing import Dict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 class AbstractCaterModel(nn.Module):
@@ -151,6 +152,36 @@ class NonLinearLstm(AbstractCaterModel):
         return y_boxes
 
 
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000, batch_first=True):
+        super().__init__()
+        self.batch_first = batch_first
+        self.dropout = nn.Dropout(p=dropout)
+
+        # Enumerates each item in the sequence.
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-np.log(10000.0) / d_model))
+        pe = torch.zeros(max_len, 1, d_model)
+        # Takes the sine and cosine to get a unique positional encoding vector.
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+        """
+        if self.batch_first:
+            x = torch.permute(x, (1, 0, 2)) # <-- permute to [seq_len, batch_size, embedding_dim]
+
+        x = self.dropout(x + self.pe[:x.size(0)])
+
+        if self.batch_first:
+            return torch.permute(x, (1, 0, 2)) # <-- permute back to [batch_size, seq_len, embedding_dim]
+
+        return x
+
 class TransformerLstm(AbstractCaterModel):
     def __init__(self, config: Dict[str, int]):
         super().__init__(config)
@@ -163,35 +194,35 @@ class TransformerLstm(AbstractCaterModel):
         bilstm_in_dim = boxes_features_dim
         bilstm_out_dim = bilstm_hidden_dim
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=boxes_features_dim, nhead=num_attention_heads)
-        self.boxes_linear = nn.Linear(in_features=self.bb_in_dim, out_features=boxes_features_dim, bias=False)
-        self.attention_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_attention_layers)
+        # Positional encoding (removed because it hindered performance significantly)
+        # self.pe_objects = PositionalEncoding(boxes_features_dim, max_len=15, batch_first=True)
 
+        # Transformer encoder
+        encoder_layer = nn.TransformerEncoderLayer(d_model=boxes_features_dim, nhead=num_attention_heads, batch_first=True)
+        self.object_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_attention_layers)
+
+        # LSTM.
         self.video_LSTM = nn.LSTM(input_size=bilstm_in_dim, hidden_size=bilstm_hidden_dim,
                                   num_layers=num_lstm_layers, bidirectional=False, batch_first=True, bias=False)
+
+        # FFNs
+        self.boxes_linear = nn.Linear(in_features=self.bb_in_dim, out_features=boxes_features_dim, bias=False)
         self.predictions_layer = nn.Linear(in_features=bilstm_out_dim, out_features=self.bb_out_dim, bias=False)
 
-    def forward(self, x: torch.tensor) -> torch.tensor:
-        # boxes dimension - batch, num_frames, num_objects_in_frame (15), boxes (5, including real/padding bit)
+    def forward(self, x: torch.tensor, src_mask):
+        # Extract embedded features via linear projection
         batch_size, frames_dim, objects_dim, features_dim = x.size()
-
         boxes_features = F.relu(self.boxes_linear(x))
 
-        # combine batch dimension and frame dimension
-        # let the model encode for each frame which are the important objects bounding boxes
-        # using self attention between each object and all the others
+        # Group dims into [batch_size, seq, embed_dim]. All modules below are batch first!
         objects_sequence = boxes_features.view((batch_size * frames_dim, objects_dim, -1)).contiguous()
-        attended_objects = self.attention_encoder(objects_sequence)
-        attended_snitch = attended_objects[:, 0, :]  # the snitch is always encoded as the first object in frame
+        attended_objects = self.object_encoder(objects_sequence)
+        attended_snitch = attended_objects[:, 0, :]  # Keep only self-attention for the snitch
 
-        # transform back to batch, frames, features
-        # this time features is the attended snitch
-        scene_features = attended_snitch.view((batch_size, frames_dim, -1)).contiguous()
+        # LSTM temporal predictions
+        time_sequence = attended_snitch.view((batch_size, frames_dim, -1)).contiguous()
+        hidden, _ = self.video_LSTM(time_sequence)
 
-        # sequence predictions using BiLSTM
-        hidden, _ = self.video_LSTM(scene_features)
-
-        # transform to 4 number presenting x, y, x, y
+        # FFN to predict snitch bounding boxes
         y_boxes = self.predictions_layer(hidden)
-
         return y_boxes

@@ -18,7 +18,6 @@ from baselines.supported_models import DOUBLE_OUTPUT_MODELS
 LARGE_CONS_INDICES = list(range(0, 64, 4))  # according to class -> index mapping file
 SNITCH_NAME = "small_gold_spl_metal_Spl_0"
 
-
 def get_experiment_videos(config: Dict[str, str]) -> List[str]:
     videos_dir = config["videos_dir"]
 
@@ -201,10 +200,10 @@ def reasoning_inference_main(model_name: str, results_dir: str, inference_config
             boxes = boxes.to(device)
 
             if model_name in DOUBLE_OUTPUT_MODELS:
-                output, index_to_track_prediction = model(boxes)
+                output, index_to_track_prediction = model(boxes, nn.Transformer.generate_square_subsequent_mask(300).to(device))
 
             else:
-                output = model(boxes)
+                output = model(boxes, nn.Transformer.generate_square_subsequent_mask(300).to(device))
 
             # move outputs to cpu and flatten output and labels
             batch_videos = {video_names[i]: i + current_sample_idx for i in range(current_batch_size)}

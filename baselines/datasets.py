@@ -441,10 +441,10 @@ class Cater5TracksForObjectsInferenceDataset(CaterAbstract5TracksForObjectsDatas
         object_to_track = self._get_closest_object_to_track_vector(prediction_boxes)
 
         # transform to tensors and return
-        tensor_boxes: torch.tensor = torch.tensor(prediction_boxes, dtype=torch.float32)
-        tensor_index_to_track: torch.tensor = torch.tensor(object_to_track, dtype=torch.int64)
-        tensor_labels: torch.tensor = torch.tensor(snitch_labels, dtype=torch.float32)
-        empty_tensor: torch.tensor = torch.tensor([])
+        tensor_boxes: torch.tensor = torch.tensor(np.array(prediction_boxes), dtype=torch.float32)
+        tensor_index_to_track: torch.tensor = torch.tensor(np.array(object_to_track), dtype=torch.int64)
+        tensor_labels: torch.tensor = torch.tensor(np.array(snitch_labels), dtype=torch.float32)
+        empty_tensor: torch.tensor = torch.tensor(np.array([]))
 
         return (tensor_boxes, tensor_index_to_track), (tensor_labels, empty_tensor), video_name
 
@@ -500,7 +500,7 @@ class Cater5TracksForObjectsTrainingDataset(CaterAbstract5TracksForObjectsDatase
         object_to_track = self._get_closest_object_to_track_vector(prediction_boxes)
 
         # transform to tensors and return
-        tensor_boxes: torch.tensor = torch.tensor(prediction_boxes, dtype=torch.float32)
+        tensor_boxes: torch.tensor = torch.tensor(np.array(prediction_boxes), dtype=torch.float32)
         tensor_index_to_track: torch.tensor = torch.tensor(object_to_track, dtype=torch.int64)
         tensor_frame_mask: torch.tensor = torch.tensor(mask)
         tensor_labels: torch.tensor = torch.tensor(snitch_labels, dtype=torch.float32)
@@ -559,7 +559,7 @@ class Cater6TracksForObjectsTrainingDataset(CaterAbstract6TracksForObjectsDatase
         object_to_track = self._get_closest_object_to_track_vector(prediction_boxes)
 
         # transform to tensors and return
-        tensor_boxes: torch.tensor = torch.tensor(prediction_boxes, dtype=torch.float32)
+        tensor_boxes: torch.tensor = torch.tensor(np.array(prediction_boxes), dtype=torch.float32)
         tensor_index_to_track: torch.tensor = torch.tensor(object_to_track, dtype=torch.int64)
         tensor_frame_mask: torch.tensor = torch.tensor(mask)
         tensor_labels: torch.tensor = torch.tensor(snitch_labels, dtype=torch.float32)

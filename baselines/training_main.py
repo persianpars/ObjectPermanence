@@ -57,7 +57,8 @@ def inference_and_iou_comp(model_name: str, model: nn.Module, compute_device: to
                 output, index_to_track_prediction = model(boxes)
 
             else:
-                output = model(boxes)
+                output = model(boxes, nn.Transformer.generate_square_subsequent_mask(300).to(compute_device))
+
 
             # prediction loss
             pred_loss = reg_loss_function(output, labels)
@@ -186,7 +187,7 @@ def training_main(model_name: str, train_config: Dict[str, Any], model_config: D
                 output, index_to_track_prediction = model(boxes)
 
             else:
-                output = model(boxes)
+                output = model(boxes, nn.Transformer.generate_square_subsequent_mask(300).to(device))
 
             # prediction loss
             pred_loss = loss_function(output, labels)
