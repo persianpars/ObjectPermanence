@@ -11,7 +11,8 @@ INFERENCE_SUPPORTED_MODELS = [
     "opnet",
     "opnet_no_labels",
     "opnet_lstm_mlp",
-    "opnet_lstm_mlp_no_labels"
+    "opnet_lstm_mlp_no_labels",
+    "double_transformer",
 ]
 
 PROGRAMMED_MODELS = [
@@ -29,7 +30,8 @@ TRAINING_SUPPORTED_MODELS = [
     "opnet",
     "opnet_no_labels",
     "opnet_lstm_mlp",
-    "opnet_lstm_mlp_no_labels"
+    "opnet_lstm_mlp_no_labels",
+    "double_transformer",
 ]
 
 TRAINING_SUPPORTED_MODELS_5_TRACKS = [
@@ -39,6 +41,7 @@ TRAINING_SUPPORTED_MODELS_5_TRACKS = [
     "non_linear_lstm_no_labels",
     "transformer_lstm",
     "transformer_lstm_no_labels",
+    "double_transformer",
 ]
 
 TRAINING_SUPPORTED_MODELS_6_TRACKS = [
@@ -60,5 +63,6 @@ NO_LABELS_MODELS = [
     "non_linear_lstm_no_labels",
     "transformer_lstm_no_labels",
     "opnet_no_labels",
-    "opnet_lstm_mlp_no_labels"
+    "opnet_lstm_mlp_no_labels",
+    "double_transformer",
 ]
